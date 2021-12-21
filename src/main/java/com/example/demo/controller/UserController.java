@@ -1,9 +1,15 @@
-package com.example.demo.model;
+package com.example.demo.controller;
 
+import com.example.demo.model.User;
+import com.example.demo.model.UserNotFoundException;
+import com.example.demo.service.UserService;
+import com.example.demo.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -18,9 +24,10 @@ public class UserController {
 
     @GetMapping("/users")
     public String showAllUsers(Model model){
-        final List<User> users = userService.getAll();
-        model.addAttribute("listAllUsers",users);
-        return "users";
+//        final List<User> users = userService.getAll();
+//        model.addAttribute("listAllUsers",users);
+//        return "users";
+        return showAllPaginatedUsers(1,5,model);
     }
     
     @GetMapping("/users/new")
@@ -32,7 +39,7 @@ public class UserController {
     }
 
     @PostMapping("/users/save")
-    public String saveUser(User user, RedirectAttributes re){
+    public String saveUser(@ModelAttribute("user") User user, RedirectAttributes re){
         userService.save(user);
         re.addFlashAttribute("message","User has been saved successfully");
         return "redirect:/users";
@@ -47,7 +54,7 @@ public class UserController {
             return "users_form";
         } catch (UserNotFoundException e) {
             re.addFlashAttribute("message",e.getMessage());
-            return "redirect: /users";
+            return "redirect:/users";
         }
 
     }
@@ -60,6 +67,20 @@ public class UserController {
         } catch (UserNotFoundException e) {
             re.addFlashAttribute("message",e.getMessage());
         }
-        return "redirect: /users";
+        return "redirect:/users";
+    }
+
+    @GetMapping("/page/{pageId}/{pageSize}")
+    public String showAllPaginatedUsers(@PathVariable("pageId") Integer pageId, @PathVariable("pageSize") Integer pageSize, Model model){
+        final Page<User> userPage = userService.getAllPaginated(pageId, pageSize);
+        final List<User> users = userPage.getContent();
+        final int totalPages = userPage.getTotalPages();
+        final long totalItems = userPage.getTotalElements();
+
+        model.addAttribute("currentPage",pageId);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("totalItems", totalItems);
+        model.addAttribute("listAllUsers",users);
+        return "users";
     }
 }
